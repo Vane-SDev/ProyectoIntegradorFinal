@@ -1,0 +1,39 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno
+.env
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+
+# Configuración de editores
+.vscode/
+.idea/
+
+# Archivos temporales
+*.tmp
+*.temp
+
+# Cobertura de pruebas
+coverage/
+
+# Build de React/Vite
+dist/
+
+# Caché
+.cache/
+
+# Variables de entorno locales
+.env.local
+.env.development.local
+.env.production.local
+
+# Archivos temporales de Workbench
+*.mwb.bak
