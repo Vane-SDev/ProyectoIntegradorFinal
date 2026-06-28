@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Search, Filter, Plus, Eye, CheckCircle, Calendar as CalendarIcon, List, RefreshCw, AlertTriangle, Clock } from 'lucide-react';
+import { Search, Filter, Plus, Eye, CheckCircle, Calendar as CalendarIcon, List, RefreshCw, AlertTriangle, Clock, History } from 'lucide-react';
 
-export const OrdenesScreen = ({ onNavigate, onSelectOrden }) => {
+export const OrdenesScreen = ({ onNavigate, onSelectOrden, modoEspecial }) => {
   const [viewMode, setViewMode] = useState('list');
   const [ordenes, setOrdenes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Diccionario visual de Tailwind para los estados
+  // Verificamos si entramos en el modo restringido de auditoría
+  const esVistaHistorial = modoEspecial === 'historial';
+
   const getBadgeEstado = (estado) => {
     switch (estado) {
       case 'Finalizada': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -33,7 +35,13 @@ export const OrdenesScreen = ({ onNavigate, onSelectOrden }) => {
     setError(null);
     try {
       const data = await api.getOrdenes();
-      setOrdenes(data);
+      
+      
+      if (esVistaHistorial) {
+        setOrdenes(data.filter(ot => ot.estado === 'Finalizada'));
+      } else {
+        setOrdenes(data);
+      }
     } catch (err) {
       console.error("Error al traer OTs:", err);
       setError("No se pudo establecer conexión con la tabla de Órdenes");
@@ -44,14 +52,12 @@ export const OrdenesScreen = ({ onNavigate, onSelectOrden }) => {
 
   useEffect(() => {
     traerOrdenes();
-  }, []);
+  }, [modoEspecial]);
 
-  // ACCIÓN OPERATIVA: Cierre de OT
   const handleCerrarOT = async (idOt, numOt) => {
     if (!window.confirm(`¿Dar por finalizada la orden ${numOt}?`)) return;
     try {
       await api.actualizarEstadoOrden(idOt, 'Finalizada');
-      // Actualizamos el DOM al instante sin gastar red
       setOrdenes(prev => prev.map(ot => ot.id_ot === idOt ? { ...ot, estado: 'Finalizada' } : ot));
     } catch (err) {
       alert("Error del servidor al intentar cerrar la orden.");
@@ -63,27 +69,31 @@ export const OrdenesScreen = ({ onNavigate, onSelectOrden }) => {
     const [anio, mes, dia] = isoString.split('T')[0].split('-');
     return `${dia}/${mes}/${anio}`;
   };
-  return (
-    <div className="space-y-6 text-left pb-12 max-w-6xl mx-auto">
 
-      {/* HEADER DE GESTIÓN */}
+  return (
+    <div className="space-y-6 text-left pb-12 max-w-6xl mx-auto animate-in fade-in duration-200">
+
+      {/* HEADER DINÁMICO SEGÚN MODO */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          
           <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1">
             <button
               onClick={() => setViewMode('list')}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'list' ? 'bg-white text-[#0A2540] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
             >
               <List size={16} />
-              <span>Listado MySQL</span>
+              <span>{esVistaHistorial ? 'Registros Sellados' : 'Listado MySQL'}</span>
             </button>
-            <button
-              onClick={() => setViewMode('calendar')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'calendar' ? 'bg-white text-[#0A2540] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
-            >
-              <CalendarIcon size={16} />
-              <span>Planificación Gantt</span>
-            </button>
+            {!esVistaHistorial && (
+              <button
+                onClick={() => setViewMode('calendar')}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'calendar' ? 'bg-white text-[#0A2540] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                <CalendarIcon size={16} />
+                <span>Planificación Gantt</span>
+              </button>
+            )}
           </div>
 
           <button
@@ -96,13 +106,20 @@ export const OrdenesScreen = ({ onNavigate, onSelectOrden }) => {
           </button>
         </div>
 
-        <button
-          onClick={() => onNavigate('crear-orden')}
-          className="flex items-center justify-center gap-2 bg-[#0A2540] hover:bg-[#007AFF] text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all w-full md:w-auto cursor-pointer"
-        >
-          <Plus size={16} />
-          <span>Generar Nueva OT</span>
-        </button>
+        {/* EL BOTÓN DE CREAR DESAPARECE EN EL HISTORIAL */}
+        {!esVistaHistorial ? (
+          <button
+            onClick={() => onNavigate('crear-orden')}
+            className="flex items-center justify-center gap-2 bg-[#0A2540] hover:bg-[#007AFF] text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all w-full md:w-auto cursor-pointer active:scale-95"
+          >
+            <Plus size={16} />
+            <span>Generar Nueva OT</span>
+          </button>
+        ) : (
+          <div className="flex items-center gap-2 text-xs font-black text-slate-400 uppercase bg-slate-100 px-4 py-2 rounded-xl">
+            <History size={16} /> Archivo inmutable
+          </div>
+        )}
       </div>
 
       {/* TABLA CONECTADA */}
@@ -110,7 +127,8 @@ export const OrdenesScreen = ({ onNavigate, onSelectOrden }) => {
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
           <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 px-6">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-              <Clock size={14} className="text-[#007AFF]" /> Despacho de Intervenciones
+              <Clock size={14} className="text-[#007AFF]" /> 
+              {esVistaHistorial ? 'Auditoría de Mantenimientos Completados' : 'Despacho de Intervenciones'}
             </span>
             <span className="text-xs font-bold text-[#0A2540]">Total: {ordenes.length} órdenes</span>
           </div>
@@ -118,7 +136,7 @@ export const OrdenesScreen = ({ onNavigate, onSelectOrden }) => {
           {loading && (
             <div className="p-12 text-center space-y-3">
               <RefreshCw size={28} className="animate-spin text-[#007AFF] mx-auto" />
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Leyendo OTs en MySQL...</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Consultando motor...</p>
             </div>
           )}
 
@@ -131,7 +149,7 @@ export const OrdenesScreen = ({ onNavigate, onSelectOrden }) => {
 
           {!loading && !error && ordenes.length === 0 && (
             <div className="p-12 text-center text-xs text-slate-400 font-bold">
-              No hay Órdenes de Trabajo despachadas en el sistema.
+              {esVistaHistorial ? 'Aún no hay trabajos terminados en el archivo histórico.' : 'No hay Órdenes de Trabajo despachadas.'}
             </div>
           )}
 
@@ -198,7 +216,7 @@ export const OrdenesScreen = ({ onNavigate, onSelectOrden }) => {
                           <Eye size={14} /> Ver
                         </button>
 
-                        {row.estado !== 'Finalizada' && (
+                        {!esVistaHistorial && row.estado !== 'Finalizada' && (
                           <button
                             onClick={() => handleCerrarOT(row.id_ot, row.numero_ot)}
                             title="Dar por Finalizada"
@@ -217,31 +235,23 @@ export const OrdenesScreen = ({ onNavigate, onSelectOrden }) => {
         </div>
       )}
 
-      {/* GANTT*/}
-      {viewMode === 'calendar' && (
+      {/* GANTT */}
+      {viewMode === 'calendar' && !esVistaHistorial && (
         <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center space-y-4 shadow-sm animate-in fade-in duration-200">
-          <div className="inline-flex p-4 bg-blue-50 text-[#007AFF] rounded-2xl">
-            <CalendarIcon size={36} />
-          </div>
+          <div className="inline-flex p-4 bg-blue-50 text-[#007AFF] rounded-2xl"><CalendarIcon size={36} /></div>
           <div className="max-w-md mx-auto">
             <h3 className="text-sm font-bold text-[#0A2540]">Gantt de Mantenimiento Preventivo</h3>
-            <p className="text-xs text-slate-400 mt-1">
-              Visualización de intervenciones programadas por el motor de inteligencia de SIGMA para los próximos 30 días.
-            </p>
+            <p className="text-xs text-slate-400 mt-1">Visualización de intervenciones programadas para los próximos 30 días.</p>
           </div>
           <div className="space-y-2 pt-4 max-w-xl mx-auto text-left">
             <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between text-xs">
               <span className="font-bold text-slate-700">Bomba P-101 (Lubricación)</span>
-              <div className="w-48 bg-slate-200 h-2 rounded-full overflow-hidden">
-                <div className="bg-[#007AFF] w-3/4 h-full rounded-full"></div>
-              </div>
+              <div className="w-48 bg-slate-200 h-2 rounded-full overflow-hidden"><div className="bg-[#007AFF] w-3/4 h-full rounded-full"></div></div>
               <span className="text-[10px] font-bold text-slate-400">Semana 2</span>
             </div>
             <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between text-xs">
               <span className="font-bold text-slate-700">Compresor C-05 (Ajuste de correas)</span>
-              <div className="w-48 bg-slate-200 h-2 rounded-full overflow-hidden">
-                <div className="bg-amber-500 w-1/3 h-full rounded-full"></div>
-              </div>
+              <div className="w-48 bg-slate-200 h-2 rounded-full overflow-hidden"><div className="bg-amber-500 w-1/3 h-full rounded-full"></div></div>
               <span className="text-[10px] font-bold text-slate-400">Semana 4</span>
             </div>
           </div>

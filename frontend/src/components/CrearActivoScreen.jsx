@@ -1,31 +1,37 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
-import { ArrowLeft, Save, Building2, Layers, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Save, Building2, Layers, AlertCircle, RefreshCw } from 'lucide-react';
 
 export const CrearActivoScreen = ({ onNavigate }) => {
-  // Estado alineado estrictamente con las columnas de MySQL / Estefanía
   const [formData, setFormData] = useState({
     codigo: '',
-    nombre: '',         // Reemplaza a 'equipo'
+    nombre: '',
     descripcion: '',
     fabricante: '',
     modelo: '',
-    numero_serie: '',   // Reemplaza a 'serie'
+    numero_serie: '',
     area: '',
     planta: '',
     sector: '',
-    criticidad: 'Media' // Por defecto
+    criticidad: 'Media'
   });
+
+  // Estado para bloquear el botón y evitar duplicados en hilos paralelos
+  const [guardando, setGuardando] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setGuardando(true); // Bloqueo preventivo inmediato
+
     try {
       await api.crearActivo(formData);
       alert("¡Activo industrial registrado en MySQL con éxito!");
       onNavigate('activos'); 
     } catch (err) {
       console.error("Error del Back:", err);
-      alert("Error 500: MySQL rechazó el paquete. Mirá la terminal de Node.");
+      alert("MySQL rechazó el paquete. Verifique que el CÓDIGO del equipo no esté repetido en el sistema.");
+    } finally {
+      setGuardando(false); // Liberamos el estado de carga
     }
   };
 
@@ -58,20 +64,24 @@ export const CrearActivoScreen = ({ onNavigate }) => {
             <div>
               <label className="block text-[11px] font-bold text-slate-600 mb-1">CÓDIGO *</label>
               <input 
+                type="text"
                 placeholder="Ej: B-101" 
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-[#007AFF] outline-none transition-all uppercase" 
-                onChange={e => setFormData({...formData, codigo: e.target.value})} 
+                value={formData.codigo}
+                onChange={e => setFormData({...formData, codigo: e.target.value.toUpperCase()})} 
                 required 
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-[#007AFF] outline-none transition-all uppercase font-mono font-bold" 
               />
             </div>
 
             <div className="md:col-span-2">
               <label className="block text-[11px] font-bold text-slate-600 mb-1">NOMBRE DEL EQUIPO *</label>
               <input 
+                type="text"
                 placeholder="Ej: Bomba de impulsión de agua cruda" 
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-[#007AFF] outline-none transition-all" 
+                value={formData.nombre}
                 onChange={e => setFormData({...formData, nombre: e.target.value})} 
                 required 
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-[#007AFF] outline-none transition-all font-bold text-[#0A2540]" 
               />
             </div>
           </div>
@@ -79,9 +89,11 @@ export const CrearActivoScreen = ({ onNavigate }) => {
           <div>
             <label className="block text-[11px] font-bold text-slate-600 mb-1">DESCRIPCIÓN TÉCNICA</label>
             <input 
+              type="text"
               placeholder="Función que cumple en el proceso..." 
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-[#007AFF] outline-none transition-all" 
+              value={formData.descripcion}
               onChange={e => setFormData({...formData, descripcion: e.target.value})} 
+              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:border-[#007AFF] outline-none transition-all text-slate-700" 
             />
           </div>
         </div>
@@ -98,25 +110,31 @@ export const CrearActivoScreen = ({ onNavigate }) => {
             <div>
               <label className="block text-[11px] font-bold text-slate-600 mb-1">PLANTA</label>
               <input 
+                type="text"
                 placeholder="Ej: Planta Norte" 
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm" 
+                value={formData.planta}
                 onChange={e => setFormData({...formData, planta: e.target.value})} 
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" 
               />
             </div>
             <div>
               <label className="block text-[11px] font-bold text-slate-600 mb-1">SECTOR</label>
               <input 
+                type="text"
                 placeholder="Ej: Nave de Extrusión" 
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm" 
+                value={formData.sector}
                 onChange={e => setFormData({...formData, sector: e.target.value})} 
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" 
               />
             </div>
             <div>
               <label className="block text-[11px] font-bold text-slate-600 mb-1">ÁREA</label>
               <input 
+                type="text"
                 placeholder="Ej: Servicios Auxiliares" 
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm" 
+                value={formData.area}
                 onChange={e => setFormData({...formData, area: e.target.value})} 
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" 
               />
             </div>
           </div>
@@ -134,34 +152,40 @@ export const CrearActivoScreen = ({ onNavigate }) => {
             <div>
               <label className="block text-[11px] font-bold text-slate-600 mb-1">FABRICANTE</label>
               <input 
+                type="text"
                 placeholder="Ej: KSB" 
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm" 
+                value={formData.fabricante}
                 onChange={e => setFormData({...formData, fabricante: e.target.value})} 
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" 
               />
             </div>
             <div>
               <label className="block text-[11px] font-bold text-slate-600 mb-1">MODELO</label>
               <input 
+                type="text"
                 placeholder="Ej: Etanorm 65-200" 
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm" 
+                value={formData.modelo}
                 onChange={e => setFormData({...formData, modelo: e.target.value})} 
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold" 
               />
             </div>
             <div>
               <label className="block text-[11px] font-bold text-slate-600 mb-1">N° DE SERIE</label>
               <input 
+                type="text"
                 placeholder="Ej: SN-88412" 
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono text-xs" 
+                value={formData.numero_serie}
                 onChange={e => setFormData({...formData, numero_serie: e.target.value})} 
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono text-xs font-bold" 
               />
             </div>
 
             <div>
               <label className="block text-[11px] font-bold text-slate-600 mb-1">CRITICIDAD</label>
               <select 
-                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-[#007AFF]" 
+                value={formData.criticidad}
                 onChange={e => setFormData({...formData, criticidad: e.target.value})}
-                defaultValue="Media"
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-[#007AFF] focus:bg-white cursor-pointer" 
               >
                 <option value="Baja">🟢 Baja</option>
                 <option value="Media">🟡 Media</option>
@@ -171,13 +195,24 @@ export const CrearActivoScreen = ({ onNavigate }) => {
           </div>
         </div>
 
-        {/* BOTÓN DE ACCIÓN */}
+        {/* BOTÓN DE ACCIÓN CON INDICADOR DE CARGA */}
         <div className="pt-2">
           <button 
             type="submit" 
-            className="w-full bg-[#007AFF] hover:bg-blue-600 text-white p-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 transition-all cursor-pointer active:scale-[0.99]"
+            disabled={guardando}
+            className="w-full bg-[#007AFF] hover:bg-blue-600 text-white p-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 transition-all cursor-pointer active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Save size={18} /> Impactar Activo en Base de Datos MySQL
+            {guardando ? (
+              <>
+                <RefreshCw size={18} className="animate-spin" />
+                <span>Registrando en almacenamiento...</span>
+              </>
+            ) : (
+              <>
+                <Save size={18} />
+                <span>Impactar Activo en Base de Datos</span>
+              </>
+            )}
           </button>
         </div>
 

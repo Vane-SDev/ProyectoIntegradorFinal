@@ -1,86 +1,237 @@
-import React, { useState } from 'react';
-import { Camera, Send, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { api } from '../services/api';
+import { Clipboard, AlertOctagon, ShieldAlert, Upload, Loader2, FileImage, X } from 'lucide-react';
 
 export const InspeccionesScreen = () => {
-  const [enviado, setEnviado] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [activos, setActivos] = useState([]);
+  
+  // ELEMENTOS DEL FORMULARIO
+  const [area, setArea] = useState('Molienda (Nave 1)');
+  const [idActivo, setIdActivo] = useState('');
+  const [anomalia, setAnomalia] = useState('');
+  const [descripcion, setDescripcion] = useState('');
+  const [criticidad, setCriticidad] = useState('Media'); 
 
-  if (enviado) {
-    return (
-      <div className="bg-white p-8 rounded-3xl border border-slate-200 text-center space-y-4 max-w-md mx-auto">
-        <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
-          <Check size={32} />
-        </div>
-        <h3 className="font-black text-xl text-[#0A2540]">¡Novedad Registrada!</h3>
-        <p className="text-xs text-slate-500 leading-relaxed">El reporte fue capturado por el sistema y derivado al panel del supervisor de turno.</p>
-        <button onClick={() => setEnviado(false)} className="w-full py-3.5 bg-[#0A2540] text-white text-xs font-black rounded-xl uppercase tracking-wider">
-          Registrar otra anomalía
-        </button>
-      </div>
-    );
-  }
+  // NUEVO ESTADO: Para guardar el archivo adjunto (imagen o foto)
+  const [fotoAdjunta, setFotoAdjunta] = useState(null);
+
+  const usuario = JSON.parse(localStorage.getItem('usuario')) || {};
+
+  useEffect(() => {
+    const cargarActivos = async () => {
+      try {
+        const data = await api.getActivos();
+        setActivos(data);
+        if (data.length > 0) setIdActivo(data[0].id_activo);
+      } catch (err) {
+        console.error("Error trayendo activos para inspección:", err);
+      }
+    };
+    cargarActivos();
+  }, []);
+
+  // Captura el archivo seleccionado por el operario
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setFotoAdjunta(e.target.files[0]);
+    }
+  };
+
+  const handleEnviarAlerta = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const numeroIncidencia = `INC-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    // metadata del archivo en la descripción física del texto para el Supervisor
+    const detalleFoto = fotoAdjunta ? ` [EVIDENCIA ADJUNTA: ${fotoAdjunta.name}]` : '';
+
+    const payloadIncidencia = {
+      numero_ot: numeroIncidencia,
+      id_activo: Number(idActivo),
+      descripcion: `[INSPECCIÓN POR ${usuario.nombre?.toUpperCase()}]: ${anomalia.toUpperCase()}. Detalle: ${descripcion}${detalleFoto}`,
+      prioridad: criticidad === 'Peligro Crítico' ? 'Alta' : criticidad === 'Media' ? 'Media' : 'Baja',
+      tipo_mantenimiento: 'Correctivo',
+      estado: 'Pendiente',
+      fecha_programada: new Date().toISOString().split('T')[0]
+    };
+
+    try {
+      const res = await fetch('http://localhost:3000/api/ordenes-trabajo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payloadIncidencia)
+      });
+
+      if (!res.ok) throw new Error("Error en servidor Express");
+
+      alert(`¡Alerta despachada! Ticket ${numeroIncidencia} generado correctamente.`);
+      
+      // Limpieza del formulario
+      setAnomalia('');
+      setDescripcion('');
+      setCriticidad('Media');
+      setFotoAdjunta(null); // Vaciamos el archivo
+    } catch (err) {
+      alert("No se pudo registrar la alerta en MySQL.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-3xl border border-slate-200 shadow-sm p-5 text-left space-y-4">
+    <div className="max-w-xl mx-auto text-left pb-12 animate-in fade-in zoom-in-95 duration-200">
       
-      <div className="border-b border-slate-100 pb-3">
-        <span className="text-[10px] font-black uppercase text-amber-600 tracking-wider bg-amber-50 px-2 py-0.5 rounded">
-          Acceso Planta Universal
-        </span>
-        <h2 className="text-lg font-black text-[#0A2540] mt-1">Reporte Rápido de Novedad</h2>
-      </div>
-
-      <form onSubmit={(e) => { e.preventDefault(); setEnviado(true); }} className="space-y-4 text-xs">
+      <div className="bg-white rounded-3xl border border-slate-200 p-6 md:p-8 shadow-xl space-y-6">
         
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block font-black text-slate-700 uppercase mb-1">Área de Planta *</label>
-            <select className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-[#0A2540]">
-              <option>Molienda (Nave 1)</option>
-              <option>Separación (Nave 2)</option>
-              <option>Almacenamiento</option>
-            </select>
+        <div className="border-b border-slate-100 pb-4 text-center sm:text-left">
+          <span className="text-[10px] font-black uppercase bg-amber-50 text-amber-700 px-2.5 py-1 rounded-md border border-amber-200 inline-block">
+            Acceso Planta Universal
+          </span>
+          <h2 className="text-xl font-black text-[#0A2540] mt-2 flex items-center justify-center sm:justify-start gap-2">
+            <Clipboard size={22} className="text-[#007AFF]" />
+            Reporte Rápido de Novedad
+          </h2>
+        </div>
+
+        <form onSubmit={handleEnviarAlerta} className="space-y-4">
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1 uppercase">Área de Planta *</label>
+              <select 
+                value={area}
+                onChange={e => setArea(e.target.value)}
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none focus:border-[#007AFF] cursor-pointer"
+              >
+                <option>Molienda (Nave 1)</option>
+                <option>Embotellado (Nave 2)</option>
+                <option>Cámaras / Frío</option>
+                <option>Despacho / Logística</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 mb-1 uppercase">Equipo Objetivo *</label>
+              <select 
+                value={idActivo}
+                onChange={e => setIdActivo(e.target.value)}
+                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-[#007AFF] cursor-pointer"
+                required
+              >
+                {activos.map(a => (
+                  <option key={a.id_activo} value={a.id_activo}>{a.nombre} [{a.codigo}]</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div>
-            <label className="block font-black text-slate-700 uppercase mb-1">Equipo (Opcional)</label>
-            <input type="text" placeholder="Ej: Cinta transportadora..." className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:outline-none" />
+            <label className="block text-[11px] font-bold text-slate-600 mb-1 uppercase">Anomalía Detectada *</label>
+            <input 
+              type="text"
+              placeholder="Ej: Fuerte ruido a roce metálico / Pérdida de aceite"
+              value={anomalia}
+              onChange={e => setAnomalia(e.target.value)}
+              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 outline-none focus:border-[#007AFF]"
+              required
+            />
           </div>
-        </div>
 
-        <div>
-          <label className="block font-black text-slate-700 uppercase mb-1">Anomalía Detectada *</label>
-          <input type="text" placeholder="Ej: Fuerte ruido a roce metálico / Pérdida de aceite" className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:border-[#007AFF] focus:outline-none" required />
-        </div>
+          <div>
+            <label className="block text-[11px] font-bold text-slate-600 mb-1 uppercase">Descripción del Contexto</label>
+            <textarea 
+              rows={3}
+              placeholder="Detallá exactamente qué observaste en tu recorrida de inspección..."
+              value={descripcion}
+              onChange={e => setDescripcion(e.target.value)}
+              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 outline-none focus:border-[#007AFF] resize-none"
+            />
+          </div>
 
-        <div>
-          <label className="block font-black text-slate-700 uppercase mb-1">Descripción del contexto</label>
-          <textarea rows={3} placeholder="Detalle exactamente qué observó en su recorrida..." className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:border-[#007AFF] focus:outline-none text-slate-700" />
-        </div>
+          <div>
+            <label className="block text-[11px] font-bold text-slate-600 mb-1.5 uppercase">Nivel de Criticidad Declarado *</label>
+            <div className="grid grid-cols-3 gap-2.5">
+              <button
+                type="button"
+                onClick={() => setCriticidad('Baja')}
+                className={`p-3 rounded-xl border text-xs font-black uppercase transition-all cursor-pointer text-center ${
+                  criticidad === 'Baja' ? 'bg-blue-50 border-blue-400 text-blue-700 ring-1 ring-blue-400' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                }`}
+              >
+                Baja
+              </button>
+              <button
+                type="button"
+                onClick={() => setCriticidad('Media')}
+                className={`p-3 rounded-xl border text-xs font-black uppercase transition-all cursor-pointer text-center ${
+                  criticidad === 'Media' ? 'bg-amber-50 border-amber-400 text-amber-700 ring-1 ring-amber-400' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                }`}
+              >
+                Media / Alerta
+              </button>
+              <button
+                type="button"
+                onClick={() => setCriticidad('Peligro Crítico')}
+                className={`p-3 rounded-xl border text-xs font-black uppercase transition-all cursor-pointer text-center flex items-center justify-center gap-1 ${
+                  criticidad === 'Peligro Crítico' ? 'bg-rose-50 border-rose-400 text-rose-700 ring-1 ring-rose-400' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
+                }`}
+              >
+                <ShieldAlert size={14} /> Crítico
+              </button>
+            </div>
+          </div>
 
-        <div>
-          <label className="block font-black text-slate-700 uppercase mb-1.5">Nivel de Criticidad</label>
-          <div className="grid grid-cols-3 gap-2">
-            {['Baja', 'Media / Alerta', 'Peligro Crítico'].map((p, i) => (
-              <label key={i} className={`p-2.5 rounded-xl border font-black text-center cursor-pointer transition-all ${i === 1 ? 'bg-amber-500 text-white border-amber-600 shadow-md' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}`}>
-                <input type="radio" name="prio" className="hidden" defaultChecked={i === 1} />
-                <span className="text-[10px] uppercase tracking-tight block">{p}</span>
+          {/* INTEGRACIÓN ASISTIDA DE ARCHIVO / CÁMARA */}
+          <div>
+            <label className="block text-[11px] font-bold text-slate-600 mb-1 uppercase">Evidencia Fotográfica (Opcional)</label>
+            
+            {!fotoAdjunta ? (
+              <label className="w-full p-4 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-dashed border-slate-300 rounded-xl text-xs font-black uppercase flex items-center justify-center gap-2 transition-all cursor-pointer">
+                <Upload size={16} className="text-[#007AFF]" />
+                <span>Adjuntar foto o capturar imagen</span>
+                {/* Input invisible que maneja la física del dispositivo */}
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleFileChange} 
+                  className="hidden" 
+                />
               </label>
-            ))}
+            ) : (
+              /* Muestra el nombre del documento cargado con opción de remoción */
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs font-bold text-emerald-800">
+                <div className="flex items-center gap-2 min-w-0">
+                  <FileImage size={16} className="text-emerald-600 shrink-0" />
+                  <span className="truncate font-mono">{fotoAdjunta.name}</span>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => setFotoAdjunta(null)} 
+                  className="p-1 hover:bg-emerald-100 rounded-full text-emerald-600 cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
           </div>
-        </div>
 
-        <div>
-          <button type="button" className="w-full py-3.5 bg-slate-50 hover:bg-slate-100 border-2 border-dashed border-slate-300 rounded-xl font-bold text-slate-600 flex items-center justify-center gap-2 transition-colors">
-            <Camera size={18} className="text-[#007AFF]" />
-            <span>Capturar Foto con la Cámara</span>
-          </button>
-        </div>
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-[#007AFF] hover:bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 text-xs uppercase tracking-widest transition-all cursor-pointer active:scale-[0.99] disabled:opacity-50"
+            >
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <AlertOctagon size={16} />}
+              <span>{loading ? 'Transmitiendo Alerta...' : 'Enviar Alerta a Turno'}</span>
+            </button>
+          </div>
 
-        <button type="submit" className="w-full mt-2 bg-[#007AFF] hover:bg-blue-600 text-white font-black py-4 rounded-2xl transition-all uppercase tracking-wider text-xs shadow-lg shadow-blue-500/20">
-          Enviar Alerta a Turno
-        </button>
+        </form>
 
-      </form>
+      </div>
     </div>
   );
 };

@@ -34,6 +34,7 @@ export const RepuestosScreen = ({ onNavigate }) => {
     obtenerRepuestos();
   }, []);
 
+  console.log("Datos de repuestos recibidos:", repuestos);
   return (
     <div className="space-y-4 md:space-y-6 text-left pb-6">
       
@@ -72,7 +73,7 @@ export const RepuestosScreen = ({ onNavigate }) => {
       {loading && (
         <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center space-y-3 shadow-sm">
           <RefreshCw size={28} className="animate-spin text-[#007AFF] mx-auto" />
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Consultando pañol en MySQL...</p>
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Consultando almacén...</p>
         </div>
       )}
 
@@ -101,37 +102,38 @@ export const RepuestosScreen = ({ onNavigate }) => {
             </div>
           ) : (
             repuestos.map((item) => {
-              const estadoStock = evaluarStock(item.stock_actual, item.stock_minimo);
-              return (
-                <div 
-                  key={item.id_repuesto || item.codigo} 
-                  className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-[#007AFF] transition-all shadow-sm flex items-center justify-between gap-3"
-                >
-                  <div className="space-y-1 min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-black text-xs text-[#0A2540] bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                        {item.codigo}
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-bold uppercase truncate">
-                        {item.fabricante || 'Generico'}
-                      </span>
-                    </div>
-                    
-                    <h4 className="font-bold text-xs text-slate-800 truncate">{item.nombre}</h4>
-                    <p className="text-[11px] text-slate-500 truncate">{item.descripcion}</p>
-                  </div>
-
-                  <div className="flex flex-col items-end justify-center gap-1 shrink-0">
-                    <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${estadoStock.estilo}`}>
-                      {estadoStock.texto}
+            const estadoStock = evaluarStock(item.stock_actual, item.stock_minimo);
+            
+            return (
+              <div 
+                key={item.id_repuesto || item.codigo} 
+                className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-[#007AFF] transition-all shadow-sm flex items-center justify-between gap-3"
+              >
+                <div className="space-y-1 min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-black text-xs text-[#0A2540] bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                      {item.codigo}
                     </span>
-                    <span className="text-xs font-black text-slate-700">
-                      {item.stock_actual} <span className="text-[10px] font-normal text-slate-400">{item.unidad_medida}</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase truncate">
+                      {item.fabricante || 'General'}
                     </span>
                   </div>
+                  
+                  <h4 className="font-bold text-xs text-slate-800 truncate">{item.nombre}</h4>
+                  <p className="text-[11px] text-slate-500 truncate">{item.descripcion || 'Sin descripción'}</p>
                 </div>
-              );
-            })
+
+                <div className="flex flex-col items-end justify-center gap-1 shrink-0">
+                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${estadoStock.estilo}`}>
+                    {estadoStock.texto}
+                  </span>
+                  <span className="text-xs font-black text-slate-700">
+                    {item.stock_actual} <span className="text-[10px] font-normal text-slate-400">{item.unidad_medida}</span>
+                  </span>
+                </div>
+              </div>
+            );
+          })
           )}
         </div>
       )}

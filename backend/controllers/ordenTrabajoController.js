@@ -142,7 +142,7 @@ const actualizarOrden = (req, res) => {
 const cambiarEstadoOrden = (req, res) => {
     const { id } = req.params;
     const { estado } = req.body;
-
+    console.log(`Cambiando OT ${id} a estado: ${estado}`);
     const sql = "UPDATE ordenes_trabajo SET estado = ? WHERE id_ot = ?";
     connection.query(sql, [estado, id], (error) => {
         if (error) return res.status(500).json({ mensaje: "Error al cambiar el estado" });
@@ -167,19 +167,19 @@ const obtenerOrdenesPorActivo = (req, res) => {
     });
 };
 
-// 7. OBTENER OTs POR TÉCNICO
+// 7. OBTENER OTs POR TÉCNICO (Versión Blindada)
 const obtenerOrdenesPorTecnico = (req, res) => {
-    const { id_tecnico } = req.params;
+    const id_tecnico = req.params.id_tecnico;
     const sql = `
-        SELECT ot.*, a.nombre AS activo_nombre, a.codigo AS activo_codigo
+        SELECT ot.*, a.nombre AS activo_nombre, a.codigo AS activo_codigo, u.nombre AS tecnico_nombre
         FROM ordenes_trabajo ot
         LEFT JOIN activos a ON ot.id_activo = a.id_activo
-        WHERE ot.id_tecnico = ?
+        LEFT JOIN usuarios u ON ot.id_tecnico = u.id_usuario
+        WHERE ot.id_tecnico = ? AND ot.estado != 'Finalizada'
         ORDER BY ot.fecha_programada DESC
     `;
-
     connection.query(sql, [id_tecnico], (error, results) => {
-        if (error) return res.status(500).json({ mensaje: "Error al consultar órdenes del técnico" });
+        if (error) return res.status(500).json({ mensaje: "Error" });
         res.status(200).json(results);
     });
 };

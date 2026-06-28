@@ -55,8 +55,10 @@ const crearRepuesto = (req, res) => {
         (error, results) => {
 
             if (error) {
+                console.error("Error detallado de MySQL:", error);
                 return res.status(500).json({
-                    mensaje: "Error al registrar repuesto"
+                    mensaje: "Error al registrar repuesto",
+                    error: error.message
                 });
             }
 

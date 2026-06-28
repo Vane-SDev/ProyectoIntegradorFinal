@@ -226,9 +226,7 @@ export const DetallesActivosScreen = ({ activo, onBack }) => {
         </div>
 
         <div className="p-4 bg-white min-h-[140px]">
-          {/* ==================================================== */}
-          {/* PESTAÑA HISTORIAL CONECTADA A MYSQL (FRENTE A) */}
-          {/* ==================================================== */}
+        
           {activeTab === 'historial' && (
             <div className="space-y-3">
               {loadingOTs && (

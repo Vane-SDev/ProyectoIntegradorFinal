@@ -7,10 +7,12 @@ CREATE TABLE IF NOT EXISTS roles (
 ) ENGINE=InnoDB;
 
 INSERT IGNORE INTO roles (id_rol, nombre) VALUES 
-(1, 'Administrador'), 
-(2, 'Técnico Campo'), 
-(3, 'Auditor Ext.');
-
+(1, 'Administrador del sistema'), 
+(2, 'Supervisor de mantenimiento'), 
+(3, 'Técnico de mantenimiento'),
+(4, 'Responsable operativo / planificación'),
+(5, 'Personal administrativo'),
+(6, 'Contratista externo');
 
 CREATE TABLE IF NOT EXISTS usuarios (
     id_usuario INT AUTO_INCREMENT PRIMARY KEY,
@@ -23,7 +25,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
 
 INSERT IGNORE INTO usuarios (id_usuario, nombre, email, password, id_rol) VALUES 
 (1, 'Vanesa Soria', 'vsoria@planta.inti', '1234', 1);
-(2, 'Estefanía', 'estefania@planta.inti', '1234', 1);
+
 
 
 CREATE TABLE IF NOT EXISTS activos (

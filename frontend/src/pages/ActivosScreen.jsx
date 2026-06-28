@@ -6,7 +6,7 @@ export const ActivosScreen = ({ onNavigate, onSelectActivo }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Traductor de colores para el estado que venga escrito en la base de MySQL
+    // Traductor de colores para el estado en la base de MySQL
     const getBadgeStyle = (estado) => {
         switch (estado?.toLowerCase()) {
             case 'operativo': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -82,7 +82,7 @@ export const ActivosScreen = ({ onNavigate, onSelectActivo }) => {
                 </div>
             )}
 
-            {/* ESTADO 2: ERROR DE CONEXIÓN (El famoso peaje) */}
+            {/* ESTADO 2: ERROR DE CONEXIÓN */}
             {!loading && error && (
                 <div className="bg-red-50 border-2 border-red-200 p-6 rounded-2xl text-center space-y-3">
                     <AlertTriangle size={32} className="text-red-600 mx-auto animate-bounce" />
@@ -96,7 +96,7 @@ export const ActivosScreen = ({ onNavigate, onSelectActivo }) => {
                 </div>
             )}
 
-            {/* ESTADO 3: ÉXITO (Renderizado de la tabla real) */}
+            {/* ESTADO 3: ÉXITO */}
             {!loading && !error && (
                 <div className="space-y-2.5">
                     <div className="flex justify-between items-center px-1">
@@ -108,7 +108,7 @@ export const ActivosScreen = ({ onNavigate, onSelectActivo }) => {
 
                     {activos.length === 0 ? (
                         <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center text-xs text-slate-400 font-bold">
-                            La tabla 'activos' de MySQL está completamente vacía.
+                            La tabla 'activos' está completamente vacía.
                         </div>
                     ) : (
                         activos.map((item) => (
