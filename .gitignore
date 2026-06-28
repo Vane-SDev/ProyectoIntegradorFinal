@@ -3,6 +3,8 @@ node_modules/
 
 # Variables de entorno
 .env
+.env.local
+.env.production
 
 # Logs
 logs

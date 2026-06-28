@@ -3,7 +3,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 
-const SECRET_KEY = "SIGMA_CMMS_SUPER_SECRET_KEY_2026";
+const SECRET_KEY = process.env.JWT_SECRET;
 
 const login = (req, res) => {
     const { email, password } = req.body;
