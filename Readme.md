@@ -446,7 +446,7 @@ DB_USER=root
 DB_PASSWORD=         ← tu contraseña de MySQL (puede quedar vacío si no tenés)
 DB_NAME=sigma
 PORT=3000
-JWT_SECRET=SIGMA_CMMS_SUPER_SECRET_KEY_2026
+JWT_SECRET=tu_clave_secreta_aleatoria
 ```
 
 > El resto de los valores funcionan tal cual para cualquier instalación local estándar.
