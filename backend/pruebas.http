@@ -1,0 +1,29 @@
+### Prueba de Integración: Alta de Usuario (Create)
+POST http://localhost:3000/api/usuarios
+Content-Type: application/json
+
+
+{
+    "nombre": "Maria",
+    "apellido": "Torres",
+    "email": "maria@planta.inti",
+    "password": "password1234",
+    "id_rol": 2
+}
+
+
+
+### Prueba de Integración: Consulta de Usuarios (Read)
+GET http://localhost:3000/api/usuarios
+
+### Prueba de Integración: Actualización de Usuario (Update)
+PUT http://localhost:3000/api/usuarios/2
+Content-Type: application/json
+
+{
+    "nombre": "Jorge Luis",
+    "apellido": "Carrizo",
+    "email": "jorge@planta.inti",
+    "password": "password123",
+    "id_rol": 2
+}

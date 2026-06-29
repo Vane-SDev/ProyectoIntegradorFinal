@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     email VARCHAR(150) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     id_rol INT NOT NULL,
+    activo BOOLEAN DEFAULT 1,
     FOREIGN KEY (id_rol) REFERENCES roles(id_rol)
 ) ENGINE=InnoDB;
 
@@ -40,7 +41,8 @@ CREATE TABLE IF NOT EXISTS activos (
     planta VARCHAR(100),
     sector VARCHAR(100),
     criticidad VARCHAR(20) DEFAULT 'Media',
-    estado VARCHAR(50) DEFAULT 'Operativo'
+    estado VARCHAR(50) DEFAULT 'Operativo',
+    activo BOOLEAN DEFAULT 1
 ) ENGINE=InnoDB;
 
 INSERT IGNORE INTO activos (id_activo, codigo, nombre, descripcion, fabricante, modelo, numero_serie, area, planta, sector, criticidad, estado) VALUES 
@@ -78,3 +80,50 @@ CREATE TABLE IF NOT EXISTS repuestos_ot (
 
 INSERT IGNORE INTO repuestos_ot (id_ot, repuesto, cantidad) VALUES 
 (1, 'Juntas de teflón 3/4 (x2)', 1);
+
+CREATE TABLE IF NOT EXISTS repuestos (
+    id_repuesto INT AUTO_INCREMENT PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    nombre VARCHAR(150) NOT NULL,
+    descripcion TEXT,
+    fabricante VARCHAR(100),
+    stock_actual INT DEFAULT 0,
+    stock_minimo INT DEFAULT 0,
+    unidad_medida VARCHAR(50) DEFAULT 'Unidad'
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS inspecciones (
+    id_inspeccion INT AUTO_INCREMENT PRIMARY KEY,
+    id_activo INT NOT NULL,
+    id_usuario INT NOT NULL,
+    tipo VARCHAR(100),
+    resultado VARCHAR(100),
+    estado VARCHAR(50),
+    observaciones TEXT,
+    fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_activo) REFERENCES activos(id_activo) ON DELETE CASCADE,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS intervenciones (
+    id_intervencion INT AUTO_INCREMENT PRIMARY KEY,
+    id_ot INT NOT NULL,
+    id_activo INT NOT NULL,
+    id_usuario INT NOT NULL,
+    tiempo_empleado DECIMAL(5,2),
+    observaciones TEXT,
+    resultado VARCHAR(100),
+    fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_ot) REFERENCES ordenes_trabajo(id_ot) ON DELETE CASCADE,
+    FOREIGN KEY (id_activo) REFERENCES activos(id_activo) ON DELETE CASCADE,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS intervenciones_repuestos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    id_intervencion INT NOT NULL,
+    id_repuesto INT NOT NULL,
+    cantidad INT DEFAULT 1,
+    FOREIGN KEY (id_intervencion) REFERENCES intervenciones(id_intervencion) ON DELETE CASCADE,
+    FOREIGN KEY (id_repuesto) REFERENCES repuestos(id_repuesto) ON DELETE CASCADE
+) ENGINE=InnoDB;
